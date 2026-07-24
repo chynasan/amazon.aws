@@ -945,3 +945,44 @@ class TestRdsUtils:
         roles_to_add, roles_to_delete = rds.compare_iam_roles(existing_list, self.target_role_list, purge_roles=True)
         assert self.target_role_list == roles_to_add
         assert existing_list == roles_to_delete
+
+
+class TestDescribeDbClusters:
+    def test_describe_db_clusters_returns_list(self):
+        client = MagicMock()
+        paginator = MagicMock()
+        client.get_paginator.return_value = paginator
+        paginator.paginate.return_value.build_full_result.return_value = {
+            "DBClusters": [
+                {"DBClusterIdentifier": "cluster-1"},
+                {"DBClusterIdentifier": "cluster-2"},
+            ]
+        }
+
+        result = rds.describe_db_clusters(client, DBClusterIdentifier="cluster-1")
+
+        client.get_paginator.assert_called_with("describe_db_clusters")
+        paginator.paginate.assert_called_with(DBClusterIdentifier="cluster-1")
+        assert len(result) == 2
+        assert result[0]["DBClusterIdentifier"] == "cluster-1"
+
+    def test_describe_db_clusters_empty(self):
+        client = MagicMock()
+        paginator = MagicMock()
+        client.get_paginator.return_value = paginator
+        paginator.paginate.return_value.build_full_result.return_value = {"DBClusters": []}
+
+        result = rds.describe_db_clusters(client)
+
+        assert result == []
+
+    def test_describe_db_clusters_not_found_returns_empty(self):
+        client = MagicMock()
+        client.get_paginator.side_effect = botocore.exceptions.ClientError(
+            {"Error": {"Code": "DBClusterNotFoundFault", "Message": "not found"}},
+            "DescribeDBClusters",
+        )
+
+        result = rds.describe_db_clusters(client, DBClusterIdentifier="nonexistent")
+
+        assert result == []

@@ -99,7 +99,13 @@ class RDSErrorHandler(AWSErrorHandler):
     @classmethod
     def _is_missing(cls):
         return is_boto3_error_code(
-            ["DBInstanceNotFound", "DBSnapshotNotFound", "DBClusterNotFound", "DBClusterSnapshotNotFoundFault"]
+            [
+                "DBInstanceNotFound",
+                "DBSnapshotNotFound",
+                "DBClusterNotFound",
+                "DBClusterNotFoundFault",
+                "DBClusterSnapshotNotFoundFault",
+            ]
         )
 
 
@@ -108,6 +114,13 @@ class RDSErrorHandler(AWSErrorHandler):
 def describe_db_cluster_snapshots(client, **params: Dict) -> List[Dict[str, Any]]:
     paginator = client.get_paginator("describe_db_cluster_snapshots")
     return paginator.paginate(**params).build_full_result()["DBClusterSnapshots"]
+
+
+@RDSErrorHandler.list_error_handler("describe db clusters", [])
+@AWSRetry.jittered_backoff()
+def describe_db_clusters(client, **params: Dict) -> List[Dict[str, Any]]:
+    paginator = client.get_paginator("describe_db_clusters")
+    return paginator.paginate(**params).build_full_result()["DBClusters"]
 
 
 @RDSErrorHandler.list_error_handler("describe db instances", [])
@@ -274,6 +287,7 @@ def handle_errors(module: AnsibleAWSModule, exception: Any, method_name: str, pa
     """
     if not isinstance(exception, ClientError):
         module.fail_json_aws(exception, msg=f"Unexpected failure for method {method_name} with parameters {parameters}")
+        return True
 
     changed = True
     error_code = exception.response["Error"]["Code"]
