@@ -307,7 +307,7 @@ def main():
     try:
         module.exit_json(changed=False, clusters=cluster_info(client, module, cluster_id, filters))
     except AnsibleRDSError as e:
-        module.fail_json_aws(e)
+        module.fail_json_aws(e, msg="Could not get RDS cluster information.")
 
 
 if __name__ == "__main__":

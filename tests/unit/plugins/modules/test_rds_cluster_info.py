@@ -87,14 +87,20 @@ def test_cluster_info_no_results(m_describe_db_clusters, m_get_tags):
     m_get_tags.assert_not_called()
 
 
+@patch(mod_name + ".get_tags")
+@patch(mod_name + ".describe_db_clusters")
 @patch(mod_name + ".AnsibleAWSModule")
-def test_main_success(m_AnsibleAWSModule):
+def test_main_success(m_AnsibleAWSModule, m_describe_db_clusters, m_get_tags):
     m_module = MagicMock()
     m_AnsibleAWSModule.return_value = m_module
+    m_module.params.get.return_value = None
+    m_describe_db_clusters.return_value = []
 
     rds_cluster_info.main()
 
     m_module.client.assert_called_with("rds")
+    m_describe_db_clusters.assert_called_once()
+    m_get_tags.assert_not_called()
     m_module.exit_json.assert_called_with(changed=False, clusters=[])
 
 
@@ -109,4 +115,4 @@ def test_main_failure(m_AnsibleAWSModule, m_describe_db_clusters):
     rds_cluster_info.main()
 
     m_module.client.assert_called_with("rds")
-    m_module.fail_json_aws.assert_called_with(e)
+    m_module.fail_json_aws.assert_called_with(e, msg="Could not get RDS cluster information.")
