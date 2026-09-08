@@ -12,7 +12,7 @@ module: s3_object_info
 version_added: 5.0.0
 short_description: Gather information about objects in S3
 description:
-    - Describes objects in S3
+    - Describes objects in S3!
     - Compatible with AWS, DigitalOcean, Ceph, Walrus, FakeS3 and StorageGRID (only supports list_keys currently).
     - When using non-AWS services, O(endpoint_url) should be specified.
 author:
